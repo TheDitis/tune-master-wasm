@@ -1,6 +1,7 @@
 mod utils;
 
 use wasm_bindgen::prelude::*;
+use wasm_bindgen_futures::JsFuture;
 use web_sys::{
     AudioContext,
     OscillatorNode,
@@ -8,6 +9,9 @@ use web_sys::{
     Navigator,
     AnalyserNode
 };
+use js_sys::{
+    Promise
+}
 
 const BUFFER_SIZE: usize = 256;
 const BIN_COUNT: usize = BUFFER_SIZE / 2;
@@ -64,29 +68,34 @@ impl AudioProcessor {
         }
     }
 
-    pub fn init(&self) {
-        // utils::set_panic_hook();
-        // panic!("message!")
+    pub async fn init(&self) {
         let ctx = &self.ctx;
         let analyser = &self.analyser;
 
         let osc1 = ctx.create_oscillator().unwrap();
         let gain = ctx.create_gain().unwrap();
 
-        osc1.set_type(OscillatorType::Sine);
-        osc1.frequency().set_value(200.0);
+        let stream_promise = Navigator::media_devices(Navigator).unwrap().get_user_media();
+        let result = match stream_promise {
+            Ok(m) => m,
+            Err(err) => log!("{:?}", err)
+        };
+
+        // let stream = JsFuture::from(stream_promise.unwrap()).await?;
+        // let src = ctx.create_media_stream_source(stream_promise.unwrap()).unwrap();
+
+        // osc1.set_type(OscillatorType::Sine);
+        // osc1.frequency().set_value(200.0);
 
         gain.gain().set_value(0.5);
-        osc1.connect_with_audio_node(&analyser);
+
+        // osc1.connect_with_audio_node(&analyser);
+        src.connect_with_audio_node(&analyser);
         analyser.connect_with_audio_node(&gain);
         gain.connect_with_audio_node(&ctx.destination());
 
         osc1.start();
         self.ctx.resume();
-        self.tick();
-        log!("stuff set up");
-
-
     }
 
     pub fn tick(&self) {
@@ -101,11 +110,7 @@ impl AudioProcessor {
         // self.fft_data = freq_data.iter().cloned().collect();
     }
 
-    pub fn get_fft_data(&self) -> *const u8 {
-        // self.fft_data.as_ptr()
-        // log!("{:?}", self.fft_data);
-        self.fft_data.as_ptr()
-    }
+    pub fn get_fft_data(&self) -> *const u8 { self.fft_data.as_ptr() }
 
     pub fn get_buffer_size(&self) -> usize {
         BUFFER_SIZE
