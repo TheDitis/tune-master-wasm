@@ -21,8 +21,12 @@ const startButton = document.getElementById("start-button");
 startButton.addEventListener("click", e => {
     console.log("HIHIHI")
     audioProcessor.init();
-    audioProcessor.tick();
-
+    // audioProcessor.tick();
+    let fftDataPtr = audioProcessor.get_fft_data()
+    // console.log("fftLoc: ", fft_loc);
+    let bufferSize = audioProcessor.get_buffer_size();
+    const fft_data = new Uint8Array(memory.buffer, fftDataPtr, bufferSize);
+    console.log(fft_data)
 })
 
 let p = new Path2D("50")
